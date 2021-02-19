@@ -1,0 +1,17 @@
+digraph D {
+    {rank = same; "Kanopy Website"; "ILS FTP"; "Overdrive Website"; "OCLC FTP"}
+    "ILS FTP" -> "ILS MARC"
+    "Kanopy Website" -> "Kanopy MARC"
+    "Kanopy MARC" -> "Cleanup script"
+    "Overdrive Website" -> "Overdrive MARC"
+    "OCLC FTP" -> "Misc eBook MARC"
+    "Misc eBook MARC" -> "Aggregated eRecords"
+    "Cleanup script" -> "Aggregated eRecords"
+    "Overdrive MARC" -> "Aggregated eRecords"
+    "Aggregated eRecords" -> "All The MARC"
+    "ILS MARC" -> "All The MARC"
+    "ILS MARC" -> "Remove some stuff"
+    "Remove some stuff" -> "Illume"
+    "All The MARC" -> "Book Jobber"
+    "All The MARC" -> "EDS"
+}

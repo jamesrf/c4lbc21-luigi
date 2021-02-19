@@ -1,40 +1,278 @@
 <!doctype html>
 <html>
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<title>reveal.js</title>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<link rel="stylesheet" href="dist/reset.css">
-		<link rel="stylesheet" href="dist/reveal.css">
-		<link rel="stylesheet" href="dist/theme/black.css" id="theme">
+    <title>reveal.js</title>
 
-		<!-- Theme used for syntax highlighted code -->
-		<link rel="stylesheet" href="plugin/highlight/monokai.css" id="highlight-theme">
-	</head>
-	<body>
-		<div class="reveal">
-			<div class="slides">
-				<section>Slide 1</section>
-				<section>Slide 2</section>
-			</div>
-		</div>
+    <link rel="stylesheet" href="dist/reset.css">
+    <link rel="stylesheet" href="dist/reveal.css">
+    <link rel="stylesheet" href="dist/theme/black.css" id="theme">
 
-		<script src="dist/reveal.js"></script>
-		<script src="plugin/notes/notes.js"></script>
-		<script src="plugin/markdown/markdown.js"></script>
-		<script src="plugin/highlight/highlight.js"></script>
-		<script>
-			// More info about initialization & config:
-			// - https://revealjs.com/initialization/
-			// - https://revealjs.com/config/
-			Reveal.initialize({
-				hash: true,
+    <!-- Theme used for syntax highlighted code -->
+    <link rel="stylesheet" href="plugin/highlight/monokai.css" id="highlight-theme">
+</head>
 
-				// Learn about plugins: https://revealjs.com/plugins/
-				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
-			});
-		</script>
-	</body>
+<body>
+    <div class="reveal">
+        <div class="slides">
+
+            <section>
+                <img src="luigi.png">
+                <h2>(not the guy from Mario Bros.)</h2>
+                <p>(except Spotify did name it after Luigi guy they just don't use his image so they don't get sued by Nintento)</p>
+
+            </section>
+            <section>
+                <h2>What is Luigi?</h2>
+                <ul>
+                    <li>Luigi is a Python-based data pipeline tool</li>
+                    <li>Built by Spotify engineers</li>
+                    <li>System for managing a data workflow</li>
+                    <li>Create steps as Python code for processing data</li>
+                    <li>Create dependencies between steps</li>
+                    <li>Run steps with CLI tool</li>
+                    <li>Similar to Airflow by AirBnB</li>
+                </ul>
+                <blockquote>pip install luigi</blockquote>
+            </section>
+            <section>
+                <h2>Based on DAGs</h2>
+                <img style="float: left" src="slide2.jpg">
+                <h5>Yeah, I use DAGs:</h5>
+
+                <ul>
+                    <li><b>D</b>irected</li>
+                    <li><b>A</b>cyclic</li>
+                    <li><b>G</b>raphs</li>
+                </ul>
+
+            </section>
+            <section>
+                <h2>Example: MARC</h2>
+                <ul>
+                    <img style="float: left" width=300 src="marc.jpg">
+                    <li>Downloading MARC</li>
+                    <li>Splitting a MARC file up</li>
+                    <li>Joining MARC files</li>
+                    <li>Extract ISBNs from MARC</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Example</h2>
+                <img src="marc-example.jpg">
+                <p>Also: email notifications! retry failing stuff!</p>
+            </section>
+
+            <section data-markdown>
+                <textarea data-template>
+                    ### It's really just code so
+                    #### Let's look at some code
+                </textarea>
+            </section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Example 1
+                    ``` python []
+                    # example1.py
+                    
+                    class HelloWorld(luigi.Task):
+                    
+                        def output(self):
+                            return luigi.LocalTarget("hello-world.txt")
+                    
+                        def run(self):
+                            with self.output().open('w') as outfile:
+                                outfile.write('Hello World!\n')
+                    ```
+                    Run with:
+                    ``` bash
+                    luigi --local-scheduler --module example1.py HelloWorld
+                    ```
+                    </textarea>
+            </section>
+            <section>
+                <img src="terminal-output.png">
+            </section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Example 2
+                    ``` python []
+                    # example2.py 
+                    
+                    class HelloRemote(luigi.Task):
+                    
+                        def output(self):
+                            return luigi.RemoteTarget("hello-world.txt", 
+                                SFTPHOST, 
+                                username=USERNAME,
+                                password=PASSWORD)
+                    
+                        def run(self):
+                            with self.output().open('w') as outfile:
+                                outfile.write('Hello World!\n')
+                    ```
+                    Run with:
+                    ``` bash
+                    luigi --local-scheduler --module example1.py HelloWorld
+                    ```
+                    </textarea>
+            </section>
+            <section data-markdown>
+                <textarea data-template>
+                    ##### Example 3
+                    ``` python [3-9|11-30]
+                    # marc-hello.py
+                    
+                    class NightlySnapshot(luigi.ExternalTask):
+                    
+                        def output(self):
+                            return luigi.RemoteTarget("nightly-snapshot.mrc", 
+                                SFTPHOST, 
+                                username=USERNAME,
+                                password=PASSWORD)
+
+                    class CleanSnapshot(luigi.Task):
+                        def output(self):
+                            return luigi.LocalTarget("cleaned-snapshot.mrc",
+                                format=luigi.format.Nop) # binary
+
+                        def requires(self):
+                            return NightlySnapshot()
+
+                        def run(self):
+                            with self.input().open("r") as fh:
+                                # open fh with PyMARC and do things to it
+                                # do self.output().open('wb') (another fh)
+                                # write to it
+
+
+                    ```
+                </textarea>
+            </section>
+
+            <section data-markdown>
+                <textarea data-template>
+                    ## Example 4: Params
+                    ``` python [4|4,7|4,7,12|1-20]
+                    # example4.py
+                    
+                    class HelloDate(luigi.Task):
+                        date = luigi.DateParameter()
+
+                        def output(self):
+                            filename = self.date.strftime('hello-%Y-%m-%d.txt')
+                            return luigi.LocalTarget(filename)
+                    
+                        def run(self):
+                            with self.output().open('w') as outfile:
+                                outfile.write('Hello %s!\n' % self.date)
+                    ```
+                    Run with:
+                    ``` bash
+                    luigi --local-scheduler --module example4.py HelloDate
+                    ```
+                    </textarea>
+            </section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## passing params via requires()
+                    ```python
+                    def requires(self):
+                        return HelloDate(date=somedate)
+                    ```
+                </textarea>
+            </section>
+            <section>
+                <h3>Later...</h3>
+                <img height=600 src="big-term.png">
+            </section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Plugins
+                    - HDFS, Hadoop, Spark, Pig
+                    - S3, Azure Blob, Dropbox
+                    - Kubernetes and Docker
+                    - Mongo, Redis
+                    - SQLa (generic SQL), Postgres, MSSQL, MySQL
+                </textarea>
+            </section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## MySQL
+                    ```python []
+                    from luigi.contrib.mysqldb import MySqlTarget
+                    
+                    class LoadDB(luigi.Task):
+                        def requires(self):
+                            return SomeCSVFile()
+
+                        def rows(self):
+                            with open self.input().open("r") as fh:
+                                for line in fh:
+                                    yield line.split(",")
+
+                        def output(self):
+                            # updates a marker table to tell Luigi not to re-run this
+                            return MySqlTarget(host=MYSQL_HOST, 
+                                database=DATABASE, 
+                                user=USERNAME, 
+                                password=PASSWORD, 
+                                table=SOMETABLE,
+                                update_id=SOME_UNIQUE_ID)
+                    ```
+                </textarea>
+            </section>
+            <section>
+                <h3>Sending emails and retries</h3>
+                <h4>Works witout Cenral Scheduler</h4>
+                <h4>Retries can be configured globally or per task</h4>
+                <img src="email.png">
+            </section>
+            <section data-markdown>
+                <textarea data-template>
+                    ## Central Scheduler 
+                    - run luigid deamon localhost:8082
+                    - has pretty web interface
+                    - keep multiple instances from running at same time
+                    - multiple workers to run multiple tasks at same time
+                    - you must run your luigi commands as cronjobs
+                </textarea>
+            </section>
+            <section>
+                <img src="graph2.png">
+            </section>
+            <section>
+                <img src="tasklist.png">
+            </section>
+            <section>
+                <h1>Thats it!</h1>
+                <h4>EM: jfournie@vcc.ca</h4>
+                <h4>TW: @robo_james</h4>
+                <h4>GH: @jamesrf</h4>
+            </section>
+
+
+        </div>
+    </div>
+
+    <script src="dist/reveal.js"></script>
+    <script src="plugin/notes/notes.js"></script>
+    <script src="plugin/markdown/markdown.js"></script>
+    <script src="plugin/highlight/highlight.js"></script>
+    <script>
+        // More info about initialization & config:
+        // - https://revealjs.com/initialization/
+        // - https://revealjs.com/config/
+        Reveal.initialize({
+            hash: true,
+
+            // Learn about plugins: https://revealjs.com/plugins/
+            plugins: [RevealMarkdown, RevealHighlight, RevealNotes]
+        });
+    </script>
+</body>
+
 </html>
